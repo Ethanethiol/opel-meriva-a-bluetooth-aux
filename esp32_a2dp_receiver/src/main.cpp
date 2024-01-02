@@ -2,9 +2,9 @@
 #include <SPI.h>
 #include <mcp2515.h>
 #include <esp_hf_client_api.h>
-#include "soc/rtc.h"
+#include <soc/rtc.h>
 #include <Wire.h>
-#include "BluetoothA2DPSink.h"
+#include <BluetoothA2DPSink.h>
 #include <BlockNot.h>
 
 BluetoothA2DPSink a2dp_sink;
@@ -60,8 +60,33 @@ int inCall;
 // 0x1 - Song Title
 // 0x2 - Artist
 // 0x4 - Album
-void avrc_metadata_callback(uint8_t data1, const uint8_t *data2) {
-  Serial.printf("AVRC metadata rsp: attribute id 0x%x, %s\n", data1, data2);
+String Song_title;
+String Artist;
+String Album;
+String Track_num;
+String Num_tracks;
+void avrc_metadata_callback(uint8_t id, const uint8_t *text) {
+ char * meta1 = (char *) text;
+ String mdata = meta1;
+ switch (id){
+  case 1:
+  Song_title = (mdata);
+  break;
+  case 2:
+  Artist = (mdata);
+  break;
+  case 4:
+  Album = (mdata);
+  break;
+  case 8:
+  Track_num = (mdata);
+  break;
+  case 16:
+  Num_tracks = (mdata);
+  break;
+
+ }
+
 }
 
 void connection_state_changed(esp_a2d_connection_state_t state, void *ptr){
@@ -316,8 +341,9 @@ void setup() {
   // Setting to max of +9 dBm should improve auto reconnect, as the BT range should be longer with higher TX power
   esp_bredr_tx_power_set(ESP_PWR_LVL_P9, ESP_PWR_LVL_P9);
 
-  // Start the A2DP sink
-  a2dp_sink.start("Saab 9-3");  
+  // Start the A2DP sink  
+  a2dp_sink.set_avrc_metadata_attribute_mask(ESP_AVRC_MD_ATTR_TITLE | ESP_AVRC_MD_ATTR_ARTIST | ESP_AVRC_MD_ATTR_ALBUM | ESP_AVRC_MD_ATTR_TRACK_NUM | ESP_AVRC_MD_ATTR_NUM_TRACKS | ESP_AVRC_MD_ATTR_PLAYING_TIME);
+  a2dp_sink.start("Opel Media Hub");
 
   // Metadata
   a2dp_sink.set_avrc_metadata_callback(avrc_metadata_callback);
@@ -337,7 +363,8 @@ bool muteState = false;
 bool playingStateRequest = true;
 bool playingState = false;
 
-String lastContent = "";
+String lastContent;
+String currentContent = "";
 
 long playTime = 0;
 
@@ -489,20 +516,26 @@ void loop() {
   {
     playingState = true;
     // Determine full screen refresh
-    String currentContent = "";
+    
 
-    //currentContent = a2dp_sink.audio_trackname + " - " + a2dp_sink.audio_trackalbum + " by " + a2dp_sink.audio_trackartist + " : " + a2dp_sink.audio_tracklength;
+    currentContent = Artist + " - " + Song_title;
 
-    // Do full refresh
-    if (currentContent != lastContent)
-    {
-      lastContent = currentContent;
-      Serial.println(currentContent);
-    }
+    
   }
   else
   {
     playingState = false;
+    currentContent = "Пауза";
   }
+  // Do full refresh
+    if (currentContent != lastContent)
+    {
+      lastContent = currentContent;
+      Serial.println("//");
+      Serial.println("Трек " + Track_num + " из " + Num_tracks);
+      Serial.println(currentContent);
+      Serial.println(Album);
+      
+    }
   #endif
 }
