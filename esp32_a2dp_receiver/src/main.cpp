@@ -89,7 +89,7 @@ void avrc_metadata_callback(uint8_t id, const uint8_t *text) {
 
 }
 
-void connection_state_changed(esp_a2d_connection_state_t state, void *ptr){
+void connection_state_changed(esp_a2d_connection_state_t state, void *ptr){ 
   if(state == ESP_A2D_CONNECTION_STATE_CONNECTED){
     Serial.println("Bluetooth connected!");
 #ifndef USE_SID_UART
